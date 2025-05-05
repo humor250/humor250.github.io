@@ -1,0 +1,734 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>诗词翻页浏览器</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: "Microsoft YaHei", "SimSun", sans-serif;
+        }
+        
+        body {
+            background-color: #f9f5e9;
+            color: #333;
+            line-height: 1.6;
+            height: 100vh;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        header {
+            text-align: center;
+            padding: 1rem 0;
+            background-color: #8b4513;
+            color: #fff;
+            position: relative;
+        }
+        
+        .progress-container {
+            width: 100%;
+            height: 5px;
+            background: #d4a76a;
+            position: absolute;
+            bottom: 0;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: #fff;
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+        
+        .poem-viewer {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            max-width: 1200px;
+            margin: 0 auto;
+            width: 100%;
+            padding: 1rem;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .poem-page {
+            display: none;
+            flex: 1;
+            flex-direction: column;
+            animation: fadeIn 0.5s ease;
+        }
+        
+        .poem-page.active {
+            display: flex;
+        }
+        
+        .poem-pair {
+            display: flex;
+            flex: 1;
+            margin: 0;
+        }
+        
+        .chinese-poem {
+            width: 40%;
+            padding-right: 1.5rem;
+            text-align: center;
+            background-color: #fffaf0;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .english-poem {
+            width: 60%;
+            padding-left: 1.5rem;
+            text-align: center;
+            background-color: #fffdf8;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .title {
+            font-size: 1.5rem;
+            font-weight: bold;
+            margin: 0.5rem 0;
+            color: #8b4513;
+        }
+        
+        .author {
+            font-style: italic;
+            margin: 0.5rem 0;
+            color: #666;
+        }
+        
+        .content {
+            white-space: pre-line;
+            line-height: 2;
+            margin: 0;
+            padding: 0.5rem 0;
+        }
+        
+        .background-container {
+            display: flex;
+            margin-top: auto;
+            padding-bottom: 1rem;
+        }
+        
+        .chinese-background {
+            width: 40%;
+            padding-right: 1.5rem;
+        }
+        
+        .english-background {
+            width: 60%;
+            padding-left: 1.5rem;
+        }
+        
+        .background {
+            text-align: left;
+            padding: 1rem;
+            background-color: #f5e9d9;
+            border-radius: 5px;
+            font-size: 0.9rem;
+            height: 100%;
+        }
+        
+        .background-title {
+            font-weight: bold;
+            margin-bottom: 0.5rem;
+            color: #8b4513;
+            text-align: center;
+        }
+        
+        .navigation {
+            display: flex;
+            justify-content: space-between;
+            padding: 1rem 0;
+            background-color: #8b4513;
+        }
+        
+        .nav-btn {
+            padding: 0.5rem 1.5rem;
+            margin: 0 1rem;
+            background-color: #d4a76a;
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 1rem;
+            transition: background-color 0.3s;
+        }
+        
+        .nav-btn:hover {
+            background-color: #f5e9d9;
+            color: #8b4513;
+        }
+        
+        .nav-btn:disabled {
+            background-color: #cccccc;
+            cursor: not-allowed;
+        }
+        
+        .page-indicator {
+            color: white;
+            font-size: 1rem;
+        }
+        
+        footer {
+            text-align: center;
+            padding: 1rem;
+            background-color: #8b4513;
+            color: #fff;
+        }
+        
+        @media (max-width: 768px) {
+            .poem-pair {
+                flex-direction: column;
+            }
+            
+            .chinese-poem, .english-poem {
+                width: 100%;
+                padding: 0.5rem;
+            }
+            
+            .background-container {
+                flex-direction: column;
+            }
+            
+            .chinese-background, .english-background {
+                width: 100%;
+                padding: 0;
+            }
+            
+            .english-background {
+                margin-top: 1rem;
+            }
+        }
+        
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+    </style>
+</head>
+<body>
+    <header>
+        <h1>中英文对照诗词精选</h1>
+        <p>Classical Chinese Poems with English Translations</p>
+        <div class="progress-container">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+    </header>
+    
+    <div class="poem-viewer" id="poemViewer">
+        <!-- 诗词1 -->
+        <div class="poem-page active" data-page="1">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">静夜思</div>
+                    <div class="author">李白</div>
+                    <div class="content">
+床前明月光，
+疑是地上霜。
+举头望明月，
+低头思故乡。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">Thoughts on a Tranquil Night</div>
+                    <div class="author">Li Bai</div>
+                    <div class="content">
+Before my bed a pool of light—
+Can it be hoar-frost on the ground?
+Looking up, I find the moon bright;
+Bowing, in homesickness I'm drowned.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《静夜思》是唐代诗人李白创作的一首五言绝句，写于公元726年（唐玄宗开元十四年）九月十五日的扬州旅舍。此诗描写了秋日夜晚，诗人于屋内抬头望月的所感，表达客居思乡之情。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"Thoughts on a Tranquil Night" is a famous five-character quatrain written by Li Bai, the great poet of the Tang Dynasty, in 726 AD at an inn in Yangzhou. The poem describes the poet's feelings when looking up at the moon on an autumn night, expressing the homesickness of a traveler.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 诗词2 -->
+        <div class="poem-page" data-page="2">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">春晓</div>
+                    <div class="author">孟浩然</div>
+                    <div class="content">
+春眠不觉晓，
+处处闻啼鸟。
+夜来风雨声，
+花落知多少。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">Spring Dawn</div>
+                    <div class="author">Meng Haoran</div>
+                    <div class="content">
+This spring morning in bed I'm lying,
+Not to awake till birds are crying.
+After one night of wind and showers,
+How many are the fallen flowers!
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《春晓》是唐代诗人孟浩然隐居在鹿门山时所作，诗人抓住春天的早晨刚刚醒来时的一瞬间展开联想，描绘了一幅春天早晨绚丽的图景，抒发了诗人热爱春天、珍惜春光的美好心情。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"Spring Dawn" was written by Meng Haoran when he lived in seclusion at Lumen Mountain. The poet captures a fleeting moment upon waking on a spring morning, painting a vivid picture of the season's beauty and expressing his love for spring and appreciation of its fleeting splendor.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 诗词3 -->
+        <div class="poem-page" data-page="3">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">登鹳雀楼</div>
+                    <div class="author">王之涣</div>
+                    <div class="content">
+白日依山尽，
+黄河入海流。
+欲穷千里目，
+更上一层楼。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">On the Stork Tower</div>
+                    <div class="author">Wang Zhihuan</div>
+                    <div class="content">
+The sun along the mountain bows;
+The Yellow River seawards flows.
+You will enjoy a grander sight
+If you climb to a greater height.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《登鹳雀楼》是盛唐诗人王之涣创作的一首五言绝句。此诗前两句写的是自然景色，但开笔就有缩万里于咫尺，使咫尺有万里之势；后两句写意，写得出人意料，把哲理与景物、情势溶化得天衣无缝。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"On the Stork Tower" is a five-character quatrain by Wang Zhihuan, a prominent poet of the High Tang period. The first two lines depict natural scenery with remarkable compression of vast distances, while the latter lines convey profound philosophy seamlessly integrated with the landscape, suggesting that broader perspectives come from higher vantage points.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 诗词4 -->
+        <div class="poem-page" data-page="4">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">江雪</div>
+                    <div class="author">柳宗元</div>
+                    <div class="content">
+千山鸟飞绝，
+万径人踪灭。
+孤舟蓑笠翁，
+独钓寒江雪。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">River Snow</div>
+                    <div class="author">Liu Zongyuan</div>
+                    <div class="content">
+From hill to hill no bird in flight;
+From path to path no man in sight.
+a lonely fisherman afloat
+Is fishing snow in lonely boat.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《江雪》是唐代诗人柳宗元于永州创作的一首五言绝句。诗中运用典型概括的手法，选择千山万径，人鸟绝迹这种最能表现山野严寒的典型景物，描绘大雪纷飞，天寒地冻的图景；接着勾画独钓寒江的渔翁形象，借以表达诗人在遭受打击之后不屈而又深感孤寂的情绪。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"River Snow" is a five-character quatrain composed by Liu Zongyuan during his exile in Yongzhou. The poem uses stark imagery of desolate mountains and paths devoid of life to depict severe winter, then focuses on the solitary figure of an old fisherman in his boat, symbolizing the poet's unyielding yet lonely spirit after political persecution.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 诗词5 -->
+        <div class="poem-page" data-page="5">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">望庐山瀑布</div>
+                    <div class="author">李白</div>
+                    <div class="content">
+日照香炉生紫烟，
+遥看瀑布挂前川。
+飞流直下三千尺，
+疑是银河落九天。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">The Waterfall in Mount Lu Viewed from Afar</div>
+                    <div class="author">Li Bai</div>
+                    <div class="content">
+The sunlit Censer Peak exhales incenselike cloud;
+Like an upended stream the cataract sounds loud.
+Its torrent dashes down three thousand feet from high
+As if the Silver River fell from the blue sky.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《望庐山瀑布》是唐代伟大诗人李白出游金陵途中初游庐山时所作的两首诗之一。这首诗形象地描绘了庐山瀑布雄奇壮丽的景色，反映了诗人对祖国大好河山的无限热爱。诗人以高度夸张的艺术手法，将飞流直泻的瀑布描写得雄伟奇丽，气象万千，宛如一幅生动的山水画。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"The Waterfall in Mount Lu Viewed from Afar" is one of two poems Li Bai wrote during his first visit to Mount Lu while traveling to Jinling. The poem vividly portrays the magnificent scenery of Lushan Waterfall, reflecting the poet's deep love for China's beautiful landscapes. With hyperbolic artistry, Li Bai describes the cascading waterfall as spectacular and majestic, like a silver river falling from heaven.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 诗词6 - 新增 -->
+        <div class="poem-page" data-page="6">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">相思</div>
+                    <div class="author">王维</div>
+                    <div class="content">
+红豆生南国，
+春来发几枝。
+愿君多采撷，
+此物最相思。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">Love Seeds</div>
+                    <div class="author">Wang Wei</div>
+                    <div class="content">
+Red berries grow in southern land.
+How many load in spring the trees?
+Gather them till full is your hand;
+They would revive fond memories.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《相思》是唐代诗人王维的创作的一首借咏物而寄相思的五绝。此诗写相思之情，却全篇不离红豆，正用其相思子之名以关合相思之情。全诗极为明快，却又委婉含蓄，语浅情深，相传当时即为人谱曲传唱，流行江南。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"Love Seeds" is a five-character quatrain by Wang Wei that expresses longing through the symbolism of red beans (which are called "love seeds" in Chinese). The entire poem revolves around the red beans without ever directly mentioning love, yet conveys deep affection through subtle implication.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 诗词7 - 新增 -->
+        <div class="poem-page" data-page="7">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">悯农</div>
+                    <div class="author">李绅</div>
+                    <div class="content">
+锄禾日当午，
+汗滴禾下土。
+谁知盘中餐，
+粒粒皆辛苦。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">The Peasants' Lot</div>
+                    <div class="author">Li Shen</div>
+                    <div class="content">
+Hoing millet noons their sweat a bedewing th' ground;
+Who knows that ev'ry grain in their plates
+Is the fruit of so much pain?
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《悯农》是唐代诗人李绅的组诗作品。这组诗深刻地反映了中国封建时代农民的生存状态。此诗具体而形象地描绘了到处硕果累累的景象，突出了农民辛勤劳动获得丰收却两手空空、惨遭饿死的现实问题，集中刻画了当时社会的矛盾。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"The Peasants' Lot" is part of a series by Li Shen that profoundly reflects the living conditions of peasants in feudal China. The poem vividly depicts scenes of abundant harvests resulting from backbreaking labor, while highlighting the cruel reality that the peasants themselves often starved despite producing the food.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 诗词8 - 新增 -->
+        <div class="poem-page" data-page="8">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">黄鹤楼送孟浩然之广陵</div>
+                    <div class="author">李白</div>
+                    <div class="content">
+故人西辞黄鹤楼，
+烟花三月下扬州。
+孤帆远影碧空尽，
+唯见长江天际流。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">Seeing Meng Haoran off at Yellow Crane Tower</div>
+                    <div class="author">Li Bai</div>
+                    <div class="content">
+My friend has left the west where the Yellow Crane towers
+For River Town veiled in green willows and red flowers.
+His lessening sail is lost in the boundless blue sky,
+Where I see but the endless River rolling by.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《黄鹤楼送孟浩然之广陵》是唐代伟大诗人李白的名篇之一。这是一首送别诗，寓离情于写景。诗作以绚丽斑驳的烟花春色和浩瀚无边的长江为背景，极尽渲染之能事，绘出了一幅意境开阔、情丝不绝、色彩明快、风流倜傥的诗人送别画。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"Seeing Meng Haoran off at Yellow Crane Tower" is one of Li Bai's most famous farewell poems. It conveys parting emotions through landscape description. Against the backdrop of gorgeous spring scenery along the Yangtze River, the poem paints a vivid picture of the poet seeing off his friend.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 诗词9 - 新增 -->
+        <div class="poem-page" data-page="9">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">早发白帝城</div>
+                    <div class="author">李白</div>
+                    <div class="content">
+朝辞白帝彩云间，
+千里江陵一日还。
+两岸猿声啼不住，
+轻舟已过万重山。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">Leaving the White Emperor Town at Dawn</div>
+                    <div class="author">Li Bai</div>
+                    <div class="content">
+Leaving at dawn the White Emperor crowned with cloud,
+I've sailed a thousand miles through canyons in a day.
+With monkeys' sad adieus the riverbanks are loud;
+My skiff has left ten thousand mountains far away.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《早发白帝城》是唐代伟大诗人李白在流放途中遇赦返回时所创作的一首七言绝句。此诗抒写了诗人当时喜悦畅快的心情。全诗把诗人遇赦后愉快的心情和江山的壮丽多姿、顺水行舟的流畅轻快融为一体。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"Leaving the White Emperor Town at Dawn" was composed by Li Bai after he was pardoned from exile. The poem expresses the poet's joyful and carefree mood upon his release. It blends this exhilaration with descriptions of majestic landscapes and the swift movement of his boat downstream.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+        
+        <!-- 诗词10 - 新增 -->
+        <div class="poem-page" data-page="10">
+            <div class="poem-pair">
+                <div class="chinese-poem">
+                    <div class="title">枫桥夜泊</div>
+                    <div class="author">张继</div>
+                    <div class="content">
+月落乌啼霜满天，
+江枫渔火对愁眠。
+姑苏城外寒山寺，
+夜半钟声到客船。
+                    </div>
+                </div>
+                
+                <div class="english-poem">
+                    <div class="title">Mooring by Maple Bridge at Night</div>
+                    <div class="author">Zhang Ji</div>
+                    <div class="content">
+At moonset cry the crows, streaking the frosty sky;
+Dimly lit fishing boats 'neath maples sadly lie.
+Beyond the city wall, from Temple of Cold Hill
+Bells break the ship-borne roamer's dream and midnight still.
+                    </div>
+                </div>
+            </div>
+            
+            <div class="background-container">
+                <div class="chinese-background">
+                    <div class="background">
+                        <div class="background-title">诗词背景</div>
+                        <p>《枫桥夜泊》是唐代诗人张继的作品。唐朝安史之乱后，张继途经寒山寺时写下这首羁旅诗。此诗精确而细腻地描述了一个客船夜泊者对江南深秋夜景的观察和感受，勾画了月落乌啼、霜天寒夜、江枫渔火、孤舟客子等景象。</p>
+                    </div>
+                </div>
+                
+                <div class="english-background">
+                    <div class="background">
+                        <div class="background-title">Poem Background</div>
+                        <p>"Mooring by Maple Bridge at Night" was written by Zhang Ji during the An Lushan Rebellion when he passed by Hanshan Temple. This poem of travel describes with precision and subtlety a traveler's observations and feelings about the autumn night scenery south of the Yangtze River.</p>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="navigation">
+        <button class="nav-btn" id="prevBtn" disabled>上一首</button>
+        <span class="page-indicator" id="pageIndicator">1/10</span>
+        <button class="nav-btn" id="nextBtn">下一首</button>
+    </div>
+    
+    <footer>
+        <p>© 2023 中英文对照诗词精选 | Classical Chinese Poems with English Translations</p>
+    </footer>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const poemPages = document.querySelectorAll('.poem-page');
+            const prevBtn = document.getElementById('prevBtn');
+            const nextBtn = document.getElementById('nextBtn');
+            const pageIndicator = document.getElementById('pageIndicator');
+            const progressBar = document.getElementById('progressBar');
+            
+            let currentPage = 0;
+            const totalPages = poemPages.length;
+            
+            // 初始化
+            updateButtons();
+            updateProgress();
+            
+            // 上一首按钮事件
+            prevBtn.addEventListener('click', function() {
+                if (currentPage > 0) {
+                    poemPages[currentPage].classList.remove('active');
+                    currentPage--;
+                    poemPages[currentPage].classList.add('active');
+                    updateButtons();
+                    updateProgress();
+                    updatePageIndicator();
+                }
+            });
+            
+            // 下一首按钮事件
+            nextBtn.addEventListener('click', function() {
+                if (currentPage < totalPages - 1) {
+                    poemPages[currentPage].classList.remove('active');
+                    currentPage++;
+                    poemPages[currentPage].classList.add('active');
+                    updateButtons();
+                    updateProgress();
+                    updatePageIndicator();
+                }
+            });
+            
+            // 更新按钮状态
+            function updateButtons() {
+                prevBtn.disabled = currentPage === 0;
+                nextBtn.disabled = currentPage === totalPages - 1;
+            }
+            
+            // 更新进度条
+            function updateProgress() {
+                const progress = ((currentPage + 1) / totalPages) * 100;
+                progressBar.style.width = progress + '%';
+            }
+            
+            // 更新页码指示器
+            function updatePageIndicator() {
+                pageIndicator.textContent = (currentPage + 1) + '/' + totalPages;
+            }
+            
+            // 添加键盘导航
+            document.addEventListener('keydown', function(e) {
+                if (e.key === 'ArrowLeft' && !prevBtn.disabled) {
+                    prevBtn.click();
+                } else if (e.key === 'ArrowRight' && !nextBtn.disabled) {
+                    nextBtn.click();
+                }
+            });
+        });
+    </script>
+</body>
+</html>
